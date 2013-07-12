@@ -1,7 +1,7 @@
 nenscript: Introduction & Historical Notes
 ==========================================
 
-nenscript is a converter from ASCII text to PostScript.  It is in the public domain and was made available to the public by Daniel Risacher on 28 October 1997.  His July 2013 message to the mil-oss group explains this history:
+nenscript is a converter from ASCII text to PostScript.  It is in the public domain, and this version of it (the latest we know of) was made available to the public by Daniel Risacher on 28 October 1997.  His July 2013 message to the mil-oss group explains this history:
 
         From: Daniel Risacher
         To: mil-oss (http://groups.google.com/group/mil-oss)
