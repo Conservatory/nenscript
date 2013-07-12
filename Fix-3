@@ -1,0 +1,25 @@
+I added the -U classification_1st_page flag to nenscript, because I
+needed it for HDSIUCS (Hard Disk Subsystem Interface Unit Control
+Software).  Since someone else might need this feature also, I am
+releasing my changes into the public domain also.
+
+I made trivial modifications to the options handling to provide
+marginally better diagnostics.
+
+I also renamed the package nenscript-1.13.3, because I think 1.13++ is
+a poor choice of version number.
+
+These changes were made on my own time and on my own computer, but
+could easily be construed as being part of my official duties as an
+AWACS software programmer/analyst.  If this is the case, then any
+changes that I made are a work of the US government and are not
+subject to copyright protection in the United States, and furthermore
+are provided, free of charge, with no warantee.  If my changes are not
+legally part of my official duties, then I hereby disclaim all rights
+to the aforementioned changes and explicitly put them in the public
+domain, and furthermore disclaim any warantee, express or implied.  I
+am not an intellectual property lawyer, so I'm not sure which of these
+situations applies.  Either way, the changes are free to you.
+
+Daniel Risacher, 2Lt, USAF
+28 Oct 1997

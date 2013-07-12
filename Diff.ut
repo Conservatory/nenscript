@@ -1,0 +1,487 @@
+Only in .: Diff.ut
+Only in .: encoding
+Only in .: fil
+Only in .: fil1
+Only in .: font_lis.o
+diff -c /home/sisug/jonas/Dos/nenscript/fontwidt.c ./fontwidt.c
+*** /home/sisug/jonas/Dos/nenscript/fontwidt.c	Thu Oct  1 18:02:48 1992
+--- ./fontwidt.c	Thu Nov 19 18:42:59 1992
+***************
+*** 11,16 ****
+--- 11,17 ----
+   *   (or money, cheques, free trips =8^) !!!!! ) please contact me
+   *   care of geoffw@extro.ucc.oz.au
+   *
++  *   Ugly fix for fractions of points by Jonas Lagerblad (jonas@sisu.se)
+   */
+  
+  #include "machdep.h"
+***************
+*** 77,82 ****
+--- 78,84 ----
+  long  size;
+  
+  {
++   int rem = size % 100;
+    size /= 100;
+  
+    if (strcmp (fontname, "Courier") != 0) {
+***************
+*** 84,93 ****
+      exit (1);
+    }
+  
+!   if (size < 5 || size > 30) {
+      fprintf (stderr, "%s: %i not bwteen valid font sizes of 5 and 30 - sorry!!\n", progname, size);
+      exit (1);
+    }
+  
+    return CourierFontWidths [size-5];
+  }
+--- 86,100 ----
+      exit (1);
+    }
+  
+!   if (size < 5 || size > 30 || (size == 30 && rem > 0)) {
+      fprintf (stderr, "%s: %i not bwteen valid font sizes of 5 and 30 - sorry!!\n", progname, size);
+      exit (1);
+    }
++   if (rem > 0) {
++       /* make an linear approximation of font size */
++       return CourierFontWidths [size-5] +
++ 	  (CourierFontWidths [size-4] - CourierFontWidths [size-5]) * rem/100;
++   } 
+  
+    return CourierFontWidths [size-5];
+  }
+Only in .: fontwidt.o
+Only in .: latin1.txt
+diff -c /home/sisug/jonas/Dos/nenscript/machdep.h ./machdep.h
+*** /home/sisug/jonas/Dos/nenscript/machdep.h	Thu Oct  1 16:06:22 1992
+--- ./machdep.h	Thu Nov 19 14:34:27 1992
+***************
+*** 45,51 ****
+  # define	LPR		"lpr -P "		/* spooler with option to set name of printer */
+  
+  # define	STRICMP(s1,s2)	strcasecmp(s1,s2)
+! # define	STRDUP(str)	strdup(str)
+  
+  # define	USERNAME	((getpwuid (getuid()))->pw_name)
+  
+--- 45,55 ----
+  # define	LPR		"lpr -P "		/* spooler with option to set name of printer */
+  
+  # define	STRICMP(s1,s2)	strcasecmp(s1,s2)
+! # ifdef ultrix
+! #  define	STRDUP(str)	strcpy(malloc(strlen(str)+1), str)
+! # else
+! #  define	STRDUP(str)	strdup(str)
+! # endif
+  
+  # define	USERNAME	((getpwuid (getuid()))->pw_name)
+  
+Only in .: main.o
+diff -c /home/sisug/jonas/Dos/nenscript/makefile ./makefile
+*** /home/sisug/jonas/Dos/nenscript/makefile	Thu Oct  1 18:03:16 1992
+--- ./makefile	Thu Nov 19 18:23:19 1992
+***************
+*** 33,38 ****
+--- 33,39 ----
+  CP	=	cp
+  RM	=	rm
+  INSTALL	=	/etc/install
++ INSTALL	=	install
+  
+  all debug:	$(PROG)
+  
+***************
+*** 42,48 ****
+  main.$(OBJ):	main.c
+  
+  install: $(PROG)
+! 	$(INSTALL) -f $(BININSTALLDIR) -s -m 555 $(PROG) 
+  
+  install.man: $(MAN)
+  	$(INSTALL) -f $(MAININSTALLDIR) -m 444 $(MAN)
+--- 43,50 ----
+  main.$(OBJ):	main.c
+  
+  install: $(PROG)
+! 	$(INSTALL) -s -m 555 $(PROG) $(BININSTALLDIR)
+! 	$(INSTALL) -m 444 $(MAN) $(MANINSTALLDIR)
+  
+  install.man: $(MAN)
+  	$(INSTALL) -f $(MAININSTALLDIR) -m 444 $(MAN)
+Only in .: nenscript
+diff -c /home/sisug/jonas/Dos/nenscript/nenscript.1 ./nenscript.1
+*** /home/sisug/jonas/Dos/nenscript/nenscript.1	Wed Oct  7 14:59:56 1992
+--- ./nenscript.1	Thu Nov 19 18:21:12 1992
+***************
+*** 48,54 ****
+  
+  Font specifications are formed from the font name and the font size, i.e. 
+  .B Courier10
+! specifies a 10 point Courier font, and Courier-Bold12 specifies a bold, 12 point Courier font.
+  
+  The NENSCRIPT environment variable may be used to set default values for most
+  configurable attributes. Values set in this way will be overridden by any
+--- 48,58 ----
+  
+  Font specifications are formed from the font name and the font size, i.e. 
+  .B Courier10
+! specifies a 10 point Courier font, and Courier-Bold12 specifies a bold, 12 point Courier font. Sizes can also be given with a decimal point, i.e.
+! .B Courier7.5
+! specifies a 7.5 point font, this might however result in a marginal error in 
+! the size calculations, since a linear approximation of the character width
+! is done.
+  
+  The NENSCRIPT environment variable may be used to set default values for most
+  configurable attributes. Values set in this way will be overridden by any
+Only in .: nenscript.1.bak
+Only in .: paper.o
+diff -c /home/sisug/jonas/Dos/nenscript/postscri.c ./postscri.c
+*** /home/sisug/jonas/Dos/nenscript/postscri.c	Thu Oct  1 18:02:52 1992
+--- ./postscri.c	Thu Nov 19 18:41:52 1992
+***************
+*** 11,16 ****
+--- 11,18 ----
+   *   (or money, cheques, free trips =8^) !!!!! ) please contact me
+   *   care of geoffw@extro.ucc.oz.au
+   *
++  *   Latin1 caracter set handling and fraction point sizes added by
++  *   Jonas Lagerblad (jonas@sisu.se).
+   */
+  
+  #include "machdep.h"
+***************
+*** 86,92 ****
+   */
+  
+  #ifdef __STDC__
+! void          PrintPSString   (FILE *, char *, long);
+  void          EndPage         (FILE *);
+  void          StartPage       (FILE *);
+  void          PrintLine       (FILE *, char *, long, int);
+--- 88,94 ----
+   */
+  
+  #ifdef __STDC__
+! void          PrintPSString   (FILE *, unsigned char *, long);
+  void          EndPage         (FILE *);
+  void          StartPage       (FILE *);
+  void          PrintLine       (FILE *, char *, long, int);
+***************
+*** 107,122 ****
+  void PrintPSString (stream, line, len)
+  
+  FILE *stream;
+! char *line;
+  long len;
+  
+  {
+    register long i;
+!   register char * str = line;
+  
+    fprintf (stream, "(");
+    for (i = 0; i < len ; i++)
+!     fprintf (stream, "%s%c", str[i] == ')'  ||
+                               str[i] == '('  ||
+  			     str[i] == '\\' ? "\\" : "", str[i]);
+    fprintf (stream, ")");
+--- 109,127 ----
+  void PrintPSString (stream, line, len)
+  
+  FILE *stream;
+! unsigned char *line;
+  long len;
+  
+  {
+    register long i;
+!   register unsigned char * str = line;
+  
+    fprintf (stream, "(");
+    for (i = 0; i < len ; i++)
+!       if ( str[i] & 0x80 )
+! 	  fprintf (stream, "\\%03o", str[i]);
+!       else
+! 	  fprintf (stream, "%s%c", str[i] == ')'  ||
+                               str[i] == '('  ||
+  			     str[i] == '\\' ? "\\" : "", str[i]);
+    fprintf (stream, ")");
+***************
+*** 136,151 ****
+  {
+    char *p, *s, *t;
+    int i;
+  
+    /* get ptr to end of string */
+    p = &font[strlen(font)-1];
+  
+    /* move backwards until we find a character that is not a digit */
+!   while (p > font && isdigit (*p))
+      p--;
+  
+    /* extract the font size */
+!   *fontsize = atol (++p) * SCALE;
+  
+    /* now duplicate and copy the font name */
+    t = s = (char *)malloc (p - font + 1);
+--- 141,157 ----
+  {
+    char *p, *s, *t;
+    int i;
++   extern double atof();
+  
+    /* get ptr to end of string */
+    p = &font[strlen(font)-1];
+  
+    /* move backwards until we find a character that is not a digit */
+!   while (p > font && (isdigit (*p) || *p == '.'))
+      p--;
+  
+    /* extract the font size */
+!   *fontsize = atof (++p) * SCALE;
+  
+    /* now duplicate and copy the font name */
+    t = s = (char *)malloc (p - font + 1);
+***************
+*** 366,371 ****
+--- 372,438 ----
+      EndPage (stream);
+  }
+  
++     static char pspro_latin1_data[] = { "\
++ /newcodes	% foreign character encodings\n\
++ [\n\
++ 160/space 161/exclamdown 162/cent 163/sterling 164/currency\n\
++ 165/yen 166/brokenbar 167/section  168/dieresis 169/copyright\n\
++ 170/ordfeminine 171/guillemotleft 172/logicalnot 173/hyphen 174/registered\n\
++ 175/macron 176/degree 177/plusminus 178/twosuperior 179/threesuperior\n\
++ 180/acute 181/mu 182/paragraph  183/periodcentered 184/cedilla\n\
++ 185/onesuperior 186/ordmasculine 187/guillemotright 188/onequarter\n\
++ 189/onehalf 190/threequarters 191/questiondown 192/Agrave 193/Aacute\n\
++ 194/Acircumflex 195/Atilde 196/Adieresis 197/Aring 198/AE 199/Ccedilla\n\
++ 200/Egrave 201/Eacute 202/Ecircumflex 203/Edieresis 204/Igrave  205/Iacute\n\
++ 206/Icircumflex 207/Idieresis 208/Eth 209/Ntilde 210/Ograve 211/Oacute\n\
++ 212/Ocircumflex 213/Otilde  214/Odieresis 215/multiply 216/Oslash\n\
++ 217/Ugrave 218/Uacute 219/Ucircumflex 220/Udieresis 221/Yacute 222/Thorn\n\
++ 223/germandbls 224/agrave 225/aacute 226/acircumflex 227/atilde\n\
++ 228/adieresis 229/aring 230/ae 231/ccedilla  232/egrave 233/eacute\n\
++ 234/ecircumflex 235/edieresis 236/igrave 237/iacute 238/icircumflex\n\
++ 239/idieresis 240/eth 241/ntilde 242/ograve 243/oacute 244/ocircumflex\n\
++ 245/otilde 246/odieresis 247/divide 248/oslash 249/ugrave  250/uacute\n\
++ 251/ucircumflex 252/udieresis 253/yacute 254/thorn 255/ydieresis\n\
++ ] def\n\
++ \n\
++ /reencdict 12 dict def\n\
++ \n\
++ " };
++ 
++     static char pspro_latin1_func[] = { "\n\
++     % change fonts using ISO Latin1 characters\n\
++ /ChgFnt		% size psname natname  =>  font\n\
++ {\n\
++     dup FontDirectory exch known	% is re-encoded name known?\n\
++     { exch pop }			% yes, get rid of long name\n\
++     { dup 3 1 roll ReEncode } ifelse	% no, re-encode it\n\
++     findfont exch scalefont setfont\n\
++ } def\n\
++ \n\
++ /ReEncode	%\n\
++ {\n\
++     reencdict begin\n\
++ 	/newname exch def\n\
++ 	/basename exch def\n\
++ 	/basedict basename findfont def\n\
++ 	/newfont basedict maxlength dict def\n\
++ 	basedict\n\
++ 	{ exch dup /FID ne\n\
++ 	    { dup /Encoding eq\n\
++ 		{ exch dup length array copy newfont 3 1 roll put }\n\
++ 		{ exch newfont 3 1 roll put } ifelse\n\
++ 	    }\n\
++ 	    { pop pop } ifelse\n\
++ 	} forall\n\
++ 	newfont /FontName newname put\n\
++ 	newcodes aload pop newcodes length 2 idiv\n\
++ 	{ newfont /Encoding get 3 1 roll put } repeat\n\
++ 	newname newfont definefont pop\n\
++     end\n\
++ } def\n\
++ \n\
++ " };
++ 
+  /********************************
+    StartJob
+      Called when a new job is to be started. This performs all of the
+***************
+*** 480,485 ****
+--- 547,555 ----
+    /* End of header marker */
+    fprintf (stream, "%%%%EndComments\n");
+  
++   /* allow Latin-1 character set by remapping most characters above 127 */
++   fprintf (stream, "%s\n%s", pspro_latin1_data, pspro_latin1_func); 
++ 
+    /* scale the coordinate system by SCALE so we can use integer arithmetic
+       without losing accuracy */
+    fprintf (stream, "1 %li div dup scale\n", SCALE);
+***************
+*** 551,565 ****
+    }
+  
+    /* define a variable for our body font, and calculate the character width for later use */
+!   fprintf (stream, "/BodyF /%s findfont %li scalefont def\n", bodyfont, BFH);
+!   fprintf (stream, "/CW BodyF setfont ( ) stringwidth pop def\n");
+  
+    /* define variables for various other font used - title, gaudy page number, gaudy date, gaudy title */
+!   fprintf (stream, "/Titlef  /%s findfont %li scalefont def\n", titlefont, TFH);
+    if (GaudyFlag) {
+!     fprintf (stream, "/Gpnf    /%s findfont %li scalefont def\n", gaudyPNfont,    gaudyPNfontsize);
+!     fprintf (stream, "/Gdatef  /%s findfont %li scalefont def\n", gaudydatefont,  gaudydatefontsize);
+!     fprintf (stream, "/Gtitlef /%s findfont %li scalefont def\n", gaudytitlefont, gaudytitlefontsize);
+    }
+  
+    /* define procedures for drawing continuation line markers, continuation lines, normal lines, and performing indents */
+--- 621,640 ----
+    }
+  
+    /* define a variable for our body font, and calculate the character width for later use */
+!   fprintf (stream, "/BodyF { %li /%s /%s-Latin1 ChgFnt } def\n", BFH, bodyfont,
+!      bodyfont, BFH);
+!   fprintf (stream, "/CW BodyF ( ) stringwidth pop def\n");
+  
+    /* define variables for various other font used - title, gaudy page number, gaudy date, gaudy title */
+!   fprintf (stream, "/Titlef {  %li /%s /%s-Latin1 ChgFnt } def\n", TFH, titlefont,
+!      titlefont);
+    if (GaudyFlag) {
+!     fprintf (stream, "/Gpnf {  %li /%s /%s-Latin1 ChgFnt } def\n", gaudyPNfontsize,
+!      gaudyPNfont, gaudyPNfont);
+!     fprintf (stream, "/Gdatef { %li /%s /%s-Latin1 ChgFnt } def\n",
+!      gaudydatefontsize, gaudydatefont, gaudydatefont);
+!     fprintf (stream, "/Gtitlef { %li /%s /%s-Latin1 ChgFnt } def\n",
+!      gaudytitlefontsize, gaudytitlefont, gaudytitlefont);
+    }
+  
+    /* define procedures for drawing continuation line markers, continuation lines, normal lines, and performing indents */
+***************
+*** 588,594 ****
+  
+    /* define stuff for security strings */
+    if (Classification != NULL) {
+!     fprintf (stream, "/Classf  /%s findfont %li scalefont def\n", classfont, classfontsize);
+      fprintf (stream, "/ClassString ");
+      PrintPSString (stream, Classification, strlen(classification));
+      fprintf (stream, " def\n");
+--- 663,670 ----
+  
+    /* define stuff for security strings */
+    if (Classification != NULL) {
+!     fprintf (stream, "/Classf {  %li /%s /%s-Latin1 ChgFnt } def\n", classfontsize,
+!      classfont, classfont);
+      fprintf (stream, "/ClassString ");
+      PrintPSString (stream, Classification, strlen(classification));
+      fprintf (stream, " def\n");
+***************
+*** 598,609 ****
+    /* define the start page procedure used to start every page */
+    fprintf (stream, "/StartPage { /SavedPage save def\n");
+    if (Classification != NULL)
+!       fprintf (stream, "  Classf setfont %li %li moveto ClassString Centre 0 setgray show\n", PW / 2, ClassY);
+  
+    if (TitleEnabled) {
+      if (GaudyFlag) {
+        fprintf (stream, "  G\n");                                                   /* draw boxes */
+!       fprintf (stream, "  Gtitlef setfont %li %li moveto Centre 0 setgray show\n",   /* title */
+                                           ((LM + (papermetrics->GaudyBoxWidth  * SCALE)) +
+                                             (PW - RM - (papermetrics->GaudyBoxWidth  * SCALE))) / 2L,
+                                           TitleY - (papermetrics->GaudyBoxHeight * SCALE) +
+--- 674,685 ----
+    /* define the start page procedure used to start every page */
+    fprintf (stream, "/StartPage { /SavedPage save def\n");
+    if (Classification != NULL)
+!       fprintf (stream, "  Classf %li %li moveto ClassString Centre 0 setgray show\n", PW / 2, ClassY);
+  
+    if (TitleEnabled) {
+      if (GaudyFlag) {
+        fprintf (stream, "  G\n");                                                   /* draw boxes */
+!       fprintf (stream, "  Gtitlef %li %li moveto Centre 0 setgray show\n",   /* title */
+                                           ((LM + (papermetrics->GaudyBoxWidth  * SCALE)) +
+                                             (PW - RM - (papermetrics->GaudyBoxWidth  * SCALE))) / 2L,
+                                           TitleY - (papermetrics->GaudyBoxHeight * SCALE) +
+***************
+*** 615,624 ****
+          PrintPSString (stream, title, strlen(title));
+          fprintf (stream, " Centre show\n");
+        }
+!       fprintf (stream, "  Gpnf    setfont %li %li moveto Centre 1 setgray show\n",   /* page number */
+                                           PW - RM - ((papermetrics->GaudyBoxWidth * SCALE) / 2L),
+                                           TitleY - ((papermetrics->GaudyBoxHeight * SCALE) / 2L) - gaudyPNfontsize * 7L / 20L);
+!       fprintf (stream, "  Gdatef  setfont %li %li moveto (%s) Centre 0 setgray show\n",
+  					 LM + ((papermetrics->GaudyBoxWidth * SCALE) / 2L),
+  					 TitleY - ((papermetrics->GaudyBoxHeight * SCALE) * 3L / 5L) - gaudydatefontsize * 7L / 10L, tm_string);
+        fprintf (stream, "                  %li %li moveto (%s) Centre show\n",
+--- 691,700 ----
+          PrintPSString (stream, title, strlen(title));
+          fprintf (stream, " Centre show\n");
+        }
+!       fprintf (stream, "  Gpnf    %li %li moveto Centre 1 setgray show\n",   /* page number */
+                                           PW - RM - ((papermetrics->GaudyBoxWidth * SCALE) / 2L),
+                                           TitleY - ((papermetrics->GaudyBoxHeight * SCALE) / 2L) - gaudyPNfontsize * 7L / 20L);
+!       fprintf (stream, "  Gdatef  %li %li moveto (%s) Centre 0 setgray show\n",
+  					 LM + ((papermetrics->GaudyBoxWidth * SCALE) / 2L),
+  					 TitleY - ((papermetrics->GaudyBoxHeight * SCALE) * 3L / 5L) - gaudydatefontsize * 7L / 10L, tm_string);
+        fprintf (stream, "                  %li %li moveto (%s) Centre show\n",
+***************
+*** 625,631 ****
+  					 LM + ((papermetrics->GaudyBoxWidth * SCALE) / 2L),
+  					 TitleY - ((papermetrics->GaudyBoxHeight * SCALE) * 3L / 5L) + gaudydatefontsize * 7L / 10L, dt_string);
+      } else {
+!       fprintf (stream, "  0 setgray Titlef setfont %li %li moveto ", LM, TitleY);
+        if (title != NULL) {
+          fprintf (stream, "pop pop ");
+          PrintPSString (stream, title, strlen(title));
+--- 701,707 ----
+  					 LM + ((papermetrics->GaudyBoxWidth * SCALE) / 2L),
+  					 TitleY - ((papermetrics->GaudyBoxHeight * SCALE) * 3L / 5L) + gaudydatefontsize * 7L / 10L, dt_string);
+      } else {
+!       fprintf (stream, "  0 setgray Titlef %li %li moveto ", LM, TitleY);
+        if (title != NULL) {
+          fprintf (stream, "pop pop ");
+          PrintPSString (stream, title, strlen(title));
+***************
+*** 637,643 ****
+        }
+      }
+    }
+!   fprintf (stream, "  BodyF setfont 0 setgray } def\n");
+  
+    /* define end page procedure */
+    fprintf (stream, "/EndPage   {");
+--- 713,719 ----
+        }
+      }
+    }
+!   fprintf (stream, "  BodyF 0 setgray } def\n");
+  
+    /* define end page procedure */
+    fprintf (stream, "/EndPage   {");
+***************
+*** 644,650 ****
+    if (GaudyFlag && Columns == 2)
+      fprintf (stream, " %li %li moveto %li -%li rlineto stroke ", LM + WW + (papermetrics->ColumnSep * SCALE / 2), StartY, 0L, StartY - EndY);
+    if (Classification != NULL)
+!       fprintf (stream, "  Classf setfont %li %li moveto ClassString Centre 0 setgray show\n", PW / 2, ClassBottomY);
+    fprintf (stream, "showpage SavedPage restore } def\n");
+  
+    /* end of the header */
+--- 720,726 ----
+    if (GaudyFlag && Columns == 2)
+      fprintf (stream, " %li %li moveto %li -%li rlineto stroke ", LM + WW + (papermetrics->ColumnSep * SCALE / 2), StartY, 0L, StartY - EndY);
+    if (Classification != NULL)
+!       fprintf (stream, "  Classf %li %li moveto ClassString Centre 0 setgray show\n", PW / 2, ClassBottomY);
+    fprintf (stream, "showpage SavedPage restore } def\n");
+  
+    /* end of the header */
+Only in .: postscri.o
+Only in .: print.o

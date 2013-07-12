@@ -1,0 +1,34 @@
+
+font_lis.c,60
+void add_font_to_list 51,1228
+void enumerate_fonts 36,974
+
+fontwidt.c,26
+int GetFontWidth 75,1674
+
+main.c,175
+char * get_string 412,10543
+int main 535,12853
+void parse_env 481,11819
+void parse_options 100,3087
+static void passthrough 517,12582
+static 69,2468
+void usage 42,1130
+
+paper.c,0
+
+postscri.c,296
+void EndColumn 229,5729
+void EndDocument 365,8497
+void EndJob 734,23206
+void EndPage 206,5382
+static char * ExtractFontSize 136,3981
+void PrintLine 253,6216
+void PrintPSString 109,3327
+void StartDocument 343,8079
+void StartJob 442,11192
+void StartPage 173,4652
+void WriteLine 293,7123
+
+print.c,24
+void print_file 34,893

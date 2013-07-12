@@ -1,0 +1,279 @@
+Please forward this to the maintainer of nenscript.
+
+In the process of porting nenscript to a 386-bsd computer I made an attempt 
+to fix all warnings given by gcc -Wall. Here are the diffs from my previous
+version (with ISO Latin1 support), most fixes seems quite trivial, but there
+was one bug in the handling of multiple files in main.c, which seems
+quite important.
+
+Regards
+Jonas Lagerblad
+
+----------
+diff -c /nfs/albert/src/nenscript-1.13/machdep.h ./machdep.h
+*** /nfs/albert/src/nenscript-1.13/machdep.h	Thu Nov 19 14:34:27 1992
+--- ./machdep.h	Tue Nov 24 10:41:36 1992
+***************
+*** 41,46 ****
+--- 41,49 ----
+  
+  # include <pwd.h>
+  # include <string.h>
++ # ifdef __STDC__
++ #  include <unistd.h>
++ # endif
+  
+  # define	LPR		"lpr -P "		/* spooler with option to set name of printer */
+  
+diff -c /nfs/albert/src/nenscript-1.13/main.c ./main.c
+*** /nfs/albert/src/nenscript-1.13/main.c	Wed Oct  7 15:06:46 1992
+--- ./main.c	Tue Nov 24 10:57:21 1992
+***************
+*** 17,26 ****
+  #include "defs.h"
+  
+  #include "version.h"
+- #include "postscri.h"
+  #include "print.h"
+  #include "main.h"
+  #include "paper.h"
+  
+  /********************************
+    defines
+--- 17,26 ----
+  #include "defs.h"
+  
+  #include "version.h"
+  #include "print.h"
+  #include "main.h"
+  #include "paper.h"
++ #include "postscri.h"
+  
+  /********************************
+    defines
+***************
+*** 143,149 ****
+              }
+            }
+            if (copies < 1) {
+!             fprintf (stderr, "%s: illegal number of copies specified - defaulting to one\n");
+              copies = 1;
+            }
+            goto next_argv;
+--- 143,149 ----
+              }
+            }
+            if (copies < 1) {
+!             fprintf (stderr, "%s: illegal number of copies specified - defaulting to one\n", progname);
+              copies = 1;
+            }
+            goto next_argv;
+***************
+*** 349,357 ****
+            if (*++ARGV[0])
+              s = ARGV[0];
+            else {
+!             if (ARGC < 1)
+                fprintf (stderr, "%s: -t option requires argument\n", progname);
+!             else {
+                --ARGC;
+                s = *++ARGV;
+              }
+--- 349,358 ----
+            if (*++ARGV[0])
+              s = ARGV[0];
+            else {
+!             if (ARGC < 1) {
+                fprintf (stderr, "%s: -t option requires argument\n", progname);
+! 	      s = 0;		/* We should flag the error in some way */
+!             } else {
+                --ARGC;
+                s = *++ARGV;
+              }
+***************
+*** 486,492 ****
+    int argc;
+    char *s;
+    char **argv;
+-   int i;
+  
+    if (env == NULL)
+      return;
+--- 487,492 ----
+***************
+*** 658,664 ****
+        perror (*argv);
+      else {
+        print_file (inputstream, outputstream, (filetitle ? filetitle : *argv), line_numbers);
+!       inputstream == NULL;
+      }
+      argv++;
+    }
+--- 658,665 ----
+        perror (*argv);
+      else {
+        print_file (inputstream, outputstream, (filetitle ? filetitle : *argv), line_numbers);
+!       fclose(inputstream);
+!       inputstream = NULL;
+      }
+      argv++;
+    }
+diff -c /nfs/albert/src/nenscript-1.13/makefile ./makefile
+*** /nfs/albert/src/nenscript-1.13/makefile	Thu Nov 19 18:23:19 1992
+--- ./makefile	Tue Nov 24 10:56:48 1992
+***************
+*** 33,39 ****
+  CP	=	cp
+  RM	=	rm
+  INSTALL	=	/etc/install
+! INSTALL	=	install
+  
+  all debug:	$(PROG)
+  
+--- 33,39 ----
+  CP	=	cp
+  RM	=	rm
+  INSTALL	=	/etc/install
+! INSTALL	=	install -c
+  
+  all debug:	$(PROG)
+  
+diff -c /nfs/albert/src/nenscript-1.13/postscri.c ./postscri.c
+*** /nfs/albert/src/nenscript-1.13/postscri.c	Thu Nov 19 18:41:52 1992
+--- ./postscri.c	Tue Nov 24 10:41:34 1992
+***************
+*** 24,29 ****
+--- 24,31 ----
+  #include "fontwidt.h"
+  #include "font_lis.h"
+  
++ #include <ctype.h>
++ 
+  /********************************
+    defines
+   ********************************/
+***************
+*** 181,187 ****
+    /* call the StartPage procedure with the appropriate arguments */
+    fprintf (stream, "(%li) ", PageNum);
+    PrintPSString (stream, CurrentFilename, strlen (CurrentFilename));
+!   fprintf (stream, " StartPage\n", PageNum);
+  
+    /* set X and Y location */
+    X = LM;
+--- 183,189 ----
+    /* call the StartPage procedure with the appropriate arguments */
+    fprintf (stream, "(%li) ", PageNum);
+    PrintPSString (stream, CurrentFilename, strlen (CurrentFilename));
+!   fprintf (stream, " StartPage\n");
+  
+    /* set X and Y location */
+    X = LM;
+***************
+*** 258,264 ****
+  int  first;
+  
+  {
+-   char *p;
+    long i;
+  
+    if (!touched_page)
+--- 260,265 ----
+***************
+*** 296,302 ****
+  char *line;
+  
+  {
+-   int l;
+    int first = True;
+    char *p;
+    char *q;
+--- 297,302 ----
+***************
+*** 622,628 ****
+  
+    /* define a variable for our body font, and calculate the character width for later use */
+    fprintf (stream, "/BodyF { %li /%s /%s-Latin1 ChgFnt } def\n", BFH, bodyfont,
+!      bodyfont, BFH);
+    fprintf (stream, "/CW BodyF ( ) stringwidth pop def\n");
+  
+    /* define variables for various other font used - title, gaudy page number, gaudy date, gaudy title */
+--- 622,628 ----
+  
+    /* define a variable for our body font, and calculate the character width for later use */
+    fprintf (stream, "/BodyF { %li /%s /%s-Latin1 ChgFnt } def\n", BFH, bodyfont,
+!      bodyfont);
+    fprintf (stream, "/CW BodyF ( ) stringwidth pop def\n");
+  
+    /* define variables for various other font used - title, gaudy page number, gaudy date, gaudy title */
+diff -c /nfs/albert/src/nenscript-1.13/print.c ./print.c
+*** /nfs/albert/src/nenscript-1.13/print.c	Thu Oct  1 18:02:54 1992
+--- ./print.c	Tue Nov 24 10:41:33 1992
+***************
+*** 18,23 ****
+--- 18,24 ----
+  #include "defs.h"
+  
+  #include "print.h"
++ #include "paper.h"
+  #include "postscri.h"
+  #include "main.h"
+  
+***************
+*** 42,48 ****
+    char line[8192+1];
+    int touched = False;
+    char *p;
+!   long line_num;
+    char *buffer;
+    int  bufflen;
+  
+--- 43,49 ----
+    char line[8192+1];
+    int touched = False;
+    char *p;
+!   long line_num = 1;
+    char *buffer;
+    int  bufflen;
+  
+***************
+*** 52,58 ****
+    if (line_numbers) {
+      buffer  += 8;
+      bufflen -= 8;
+!     sprintf (line, "%7lu:", line_num = 1);
+    }
+  
+    StartDocument (output, filename);
+--- 53,59 ----
+    if (line_numbers) {
+      buffer  += 8;
+      bufflen -= 8;
+!     sprintf (line, "%7lu:", line_num);
+    }
+  
+    StartDocument (output, filename);
+diff -c /nfs/albert/src/nenscript-1.13/version.h ./version.h
+*** /nfs/albert/src/nenscript-1.13/version.h	Wed Oct  7 15:06:30 1992
+--- ./version.h	Tue Nov 24 11:00:14 1992
+***************
+*** 14,22 ****
+   */
+  
+  #ifndef US_VERSION
+! char * version_string = "nenscript v1.13 8-October-1992";
+  #else
+! char * version_string = "nenscript v1.13 (US version) 8-October-1992";
+  #endif
+  
+  char * copyright_string = "\
+--- 14,22 ----
+   */
+  
+  #ifndef US_VERSION
+! char * version_string = "nenscript v1.13++ 24-November-1992";
+  #else
+! char * version_string = "nenscript v1.13++ (US version) 24-November-1992";
+  #endif
+  
+  char * copyright_string = "\

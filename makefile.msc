@@ -1,0 +1,82 @@
+#
+# Makefile for MSC 6.00A using dmake 3.8 under OS/2
+# Adapted with minor changes from the supplied Makefile.
+# Files:
+#  nenscript.exe	OS/2 executable
+#  nenscrib.exe   OS/2 and MSDOS bound executable
+# Darrel Hankerson hank@ducvax.auburn.edu, 4-Oct-92
+#
+
+.IMPORT : HOME
+
+CC = cl
+LINK = cl
+BIND = bind
+
+OBJ		= .obj
+
+BaseName =  nenscript
+PROG		=	$(BaseName).exe
+MAN		=	$(BaseName).1
+SOURCES		=	main.c postscri.c print.c fontwidt.c font_lis.c paper.c
+OBJECTS		=	$(SOURCES:.c=.obj)
+
+INSTALLDIR	=
+BININSTALLDIR	=	$(INSTALLDIR)/bin
+MANINSTALLDIR	=	$(INSTALLDIR)/etc/man
+
+LOCALINSTALLDIR		=	$(HOME)/bin
+LOCALMANINSTALLDIR	=	$(HOME)/man/man1
+
+#
+# uncomment macro below for debug version
+#
+#DEBUG	= -g
+
+#
+# US_VERSION selects default US paper format as well as selecting US format date
+#
+CFLAGS	=	$(DEBUG) #-DUS_VERSION
+LFLAGS	=	-Lp /F 5000
+
+DEFS = -DMSDOS -D__STDC__
+
+CHMOD	=	chmod
+CP	=	cp
+RM	=	rm -f
+INSTALL	=	install
+
+all debug:	$(PROG) nenscrib.exe
+
+$(PROG): $(OBJECTS) $(BaseName).def
+	$(LINK) $(LFLAGS) -o $@ $<
+
+nenscrib.exe : $(PROG)
+	$(BIND) $< /o $@ 
+
+.c.obj :; $(CC) -c $(CFLAGS) $(DEFS) $<
+
+install: $(PROG)
+	$(INSTALL)  $(PROG) $(BININSTALLDIR)
+
+install.man: $(MAN)
+	$(INSTALL) $(MAN) $(MANINSTALLDIR)
+
+install.local:	$(PROG) $(MAN)
+	$(INSTALL) $(PROG) $(LOCALINSTALLDIR)
+	$(INSTALL) $(MAN) $(LOCALMANINSTALLDIR)
+
+clean:
+	$(RM) *$(OBJ) *.mdt $(PROG) nenscrib.exe
+
+font_lis.c: machdep.h defs.h font_lis.h main.h
+
+fontwidt.c: machdep.h defs.h fontwidt.h main.h
+
+main.c: machdep.h defs.h version.h postscri.h print.h main.h paper.h
+
+paper.c: machdep.h paper.h
+
+postscri.c: machdep.h defs.h paper.h postscri.h fontwidt.h font_lis.h main.h
+
+print.c: machdep.h defs.h print.h postscri.h main.h

@@ -1,0 +1,39 @@
+diff -c orig/machdep.h new/machdep.h
+*** orig/machdep.h	Thu Oct 01 16:06:22 1992
+--- new/machdep.h	Thu Oct 08 21:20:12 1992
+***************
+*** 14,20 ****
+  # include <string.h>
+  # include <malloc.h>
+  
+! # define STRICMP(s1,s2) _stricmp (s1,s2)
+  # ifdef _WINDOWS
+  #  define	STRDUP(str)	_strdup(str)
+  # else
+--- 14,20 ----
+  # include <string.h>
+  # include <malloc.h>
+  
+! # define STRICMP(s1,s2) stricmp (s1,s2)
+  # ifdef _WINDOWS
+  #  define	STRDUP(str)	_strdup(str)
+  # else
+***************
+*** 21,27 ****
+  #  define	STRDUP(str)	strdup(str)
+  # endif
+  
+! # define USERNAME	getenv("LOGNAME")!=NULL?getenv("LOGNAME"):getenv("USER")!=NULL?getenv("USER"):"Unknown")
+  
+  # define	GETTIME(tm,str)	strftime(str,15,"%X",tm)
+  
+--- 21,27 ----
+  #  define	STRDUP(str)	strdup(str)
+  # endif
+  
+! # define USERNAME	getenv("LOGNAME")!=NULL?getenv("LOGNAME"):getenv("USER")!=NULL?getenv("USER"):"Unknown"
+  
+  # define	GETTIME(tm,str)	strftime(str,15,"%X",tm)
+  
+Only in new: makefile.msc
+Only in new: nenscript.def
